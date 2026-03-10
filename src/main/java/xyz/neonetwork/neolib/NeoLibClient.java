@@ -25,7 +25,5 @@ public class NeoLibClient {
     @SubscribeEvent
     static void onClientSetup(FMLClientSetupEvent event) {
         // Some client setup code
-        NeoLib.LOGGER.info("HELLO FROM CLIENT SETUP");
-        NeoLib.LOGGER.info("MINECRAFT NAME >> {}", Minecraft.getInstance().getUser().getName());
     }
 }
