@@ -1,5 +1,7 @@
 package xyz.neonetwork.neolib;
 
+import net.minecraft.server.MinecraftServer;
+import net.neoforged.neoforge.event.server.ServerStartedEvent;
 import org.slf4j.Logger;
 
 import com.mojang.logging.LogUtils;
@@ -37,6 +39,7 @@ import static xyz.neonetwork.neolib.api.APIRequest.apiRequest;
 public class NeoLib {
     public static final String MODID = "neolib";
     public static final Logger LOGGER = LogUtils.getLogger();
+    public static MinecraftServer server;
 
     public NeoLib(IEventBus modEventBus, ModContainer modContainer) {
         modEventBus.addListener(this::commonSetup);
@@ -54,5 +57,10 @@ public class NeoLib {
     public void onServerStarting(ServerStartingEvent event) {
         // Do something when the server starts
         LOGGER.info("NeoLib Server Loaded");
+    }
+
+    @SubscribeEvent
+    public void onServerStart(ServerStartedEvent event) {
+        server = event.getServer();
     }
 }
