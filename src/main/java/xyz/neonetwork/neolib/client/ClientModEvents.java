@@ -1,10 +1,12 @@
 package xyz.neonetwork.neolib.client;
 
-import ca.weblite.objc.Client;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.registration.HandlerThread;
 import net.neoforged.neoforge.network.registration.PayloadRegistrar;
+import xyz.neonetwork.neolib.gui.ScreenElementType;
+import xyz.neonetwork.neolib.gui.ScreenEventPacket;
+import xyz.neonetwork.neolib.servergui.ServerScreenPacket;
 import xyz.neonetwork.neolib.toast.NeoToastPacket;
 
 public class ClientModEvents {
@@ -15,7 +17,17 @@ public class ClientModEvents {
 		registrar.playToClient(
 			NeoToastPacket.TYPE,
 			NeoToastPacket.STREAM_CODEC,
-			ClientPayloadHandler::handleDataOnNetwork
+			ClientPayloadHandler::handleToastPacket
+		);
+		registrar.playToClient(
+			ServerScreenPacket.TYPE,
+			ServerScreenPacket.STREAM_CODEC,
+			ClientPayloadHandler::handleServerScreenPacket
+		);
+		registrar.playBidirectional(
+			ScreenEventPacket.TYPE,
+			ScreenEventPacket.STREAM_CODEC,
+			ClientPayloadHandler::handleScreenEventPacket
 		);
 	}
 }

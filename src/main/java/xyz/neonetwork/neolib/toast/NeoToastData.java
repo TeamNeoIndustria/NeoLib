@@ -9,6 +9,7 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import org.jetbrains.annotations.NotNull;
 import xyz.neonetwork.neolib.NeoLib;
 import xyz.neonetwork.neolib.textures.NeoTexture;
+import xyz.neonetwork.neolib.utilities.NeoComponent;
 
 import java.io.*;
 import java.util.Objects;
@@ -23,24 +24,28 @@ public class NeoToastData implements Serializable {
 		ByteBufCodecs.BYTE_ARRAY.map(NeoToastData::fromByteArray, NeoToastData::toByteArray);
 
 	public NeoToastData(@NotNull Component title, @NotNull Component message, @NotNull NeoTexture texture, long duration) {
-		this.title = Component.Serializer.toJson(title, NeoLib.server.registryAccess());
-		this.message = Component.Serializer.toJson(message, NeoLib.server.registryAccess());
+		this.title = NeoComponent.toJson(title);
+		this.message = NeoComponent.toJson(message);
+//		this.title = Component.Serializer.toJson(title, NeoLib.server.registryAccess());
+//		this.message = Component.Serializer.toJson(message, NeoLib.server.registryAccess());
 		this.textureName = texture.textureName;
 		this.duration = duration;
 	}
 
 	public Component getTitle() {
-		if (NeoLib.server != null) {
-			return Component.Serializer.fromJson(title, NeoLib.server.registryAccess());
-		}
-		return Component.Serializer.fromJson(title, Objects.requireNonNull(Minecraft.getInstance().getConnection()).registryAccess());
+		return NeoComponent.fromJson(title);
+//		if (NeoLib.server != null) {
+//			return Component.Serializer.fromJson(title, NeoLib.server.registryAccess());
+//		}
+//		return Component.Serializer.fromJson(title, Objects.requireNonNull(Minecraft.getInstance().getConnection()).registryAccess());
 	}
 
 	public Component getMessage() {
-		if (NeoLib.server != null) {
-			return Component.Serializer.fromJson(message, NeoLib.server.registryAccess());
-		}
-		return Component.Serializer.fromJson(message, Objects.requireNonNull(Minecraft.getInstance().getConnection()).registryAccess());
+		return NeoComponent.fromJson(message);
+//		if (NeoLib.server != null) {
+//			return Component.Serializer.fromJson(message, NeoLib.server.registryAccess());
+//		}
+//		return Component.Serializer.fromJson(message, Objects.requireNonNull(Minecraft.getInstance().getConnection()).registryAccess());
 	}
 
 	public NeoTexture getTexture() {
