@@ -58,12 +58,12 @@ public class NeoStringWidget {
 			}
 			this.lines.addAll(this.font.split(currentLabel, this.width));
 		}
-//		double a = ((double) this.height / this.lineHeight);
-//		double b = (double) (this.lineHeight - font.lineHeight) / this.lineHeight;
-//		int c = (int) (((a - (int) a) / b) + (int) a);
-//		NeoLib.LOGGER.info("A: {}, B: {}, C: {}", a, b, c);
 
-		int c = (this.height / this.lineHeight);
+		// Nova is responsible for this heinous series of maths
+		double a = ((double) this.height / this.lineHeight);
+		double b = (double) (this.lineHeight - font.lineHeight) / this.lineHeight;
+		int c = (int) (((a - (int) a) / b) + (int) a);
+
 		this.lines = this.lines.subList(0, Math.min(c, this.lines.size()));
 		this.linesCalculated = true;
 	}
@@ -108,8 +108,8 @@ public class NeoStringWidget {
 	public void render(GuiGraphics gui, int mouseX, int mouseY, float partialTick) {
 		if (!this.linesCalculated) this.calculateLines();
 		int offsetY = switch (this.vertical) {
-			case NeoStringAlign.Vertical.MIDDLE -> (this.height - (this.lineHeight * this.lines.size()) + this.lineHeight - font.lineHeight) / 2;
-			case NeoStringAlign.Vertical.BOTTOM -> this.height - (this.lineHeight * this.lines.size()) + this.lineHeight - font.lineHeight;
+			case NeoStringAlign.Vertical.MIDDLE -> (this.height - (this.lineHeight * this.lines.size()) + this.lineHeight - font.lineHeight + 1) / 2;
+			case NeoStringAlign.Vertical.BOTTOM -> this.height - (this.lineHeight * this.lines.size()) + this.lineHeight - font.lineHeight + 1;
 			default -> 0;
 		};
 		for(FormattedCharSequence line : this.lines) {
