@@ -91,6 +91,12 @@ public class NeoStringWidget {
 	public void setAlign(@NotNull NeoStringAlign.Horizontal horizontal, @NotNull NeoStringAlign.Vertical vertical) {
 		this.horizontal = horizontal;
 		this.vertical = vertical;
+		this.linesCalculated = false;
+	}
+
+	public void setLabel(@NotNull List<@NotNull Component> label) {
+		this.label = label;
+		this.linesCalculated = false;
 	}
 
 	public void render(GuiGraphics gui, int mouseX, int mouseY, float partialTick) {

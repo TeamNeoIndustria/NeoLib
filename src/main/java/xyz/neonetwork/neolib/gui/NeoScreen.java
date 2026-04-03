@@ -10,6 +10,7 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.FormattedCharSequence;
+import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.NotNull;
 import org.lwjgl.glfw.GLFW;
 import xyz.neonetwork.neolib.NeoLib;
@@ -114,9 +115,9 @@ public class NeoScreen extends Screen {
 	private final Map<String, EditBox> editBoxWidgets = new HashMap<>();
 	private final Map<String, EditBoxType> editBoxTypes = new HashMap<>();
 	private final Map<String, MultiLineEditBox> mlEditBoxWidgets = new HashMap<>();
-	private final List<NeoStringWidget> stringWidgets = new ArrayList<>();
+	private final Map<String, NeoStringWidget> stringWidgets = new HashMap<>();
 	private final Map<String, Button> buttonWidgets = new HashMap<>();
-	private final List<NeoItemWidget> itemWidgets = new ArrayList<>();
+	private final Map<String, NeoItemWidget> itemWidgets = new HashMap<>();
 
 	@Override
 	public void init() {
@@ -155,7 +156,7 @@ public class NeoScreen extends Screen {
 				case ScreenElementType.STRING:
 					NeoStringWidget stringWidget = grid.getStringWidget(name, offsetX + 16, offsetY + 16);
 					if (stringWidget == null) break;
-					stringWidgets.add(stringWidget);
+					stringWidgets.put(name, stringWidget);
 					break;
 				case ScreenElementType.BUTTON:
 					Button button = grid.getButtonWidget(name, offsetX + 16, offsetY + 16);
@@ -166,7 +167,7 @@ public class NeoScreen extends Screen {
 				case ScreenElementType.ITEM:
 					NeoItemWidget itemWidget = grid.getItemWidget(name, offsetX + 16, offsetY + 16);
 					if (itemWidget == null) break;
-					itemWidgets.add(itemWidget);
+					itemWidgets.put(name, itemWidget);
 					break;
 			}
 		}
@@ -196,16 +197,18 @@ public class NeoScreen extends Screen {
 				gui.drawString(font, NeoComponent.autoTruncateText(font, editBox.getMessage(), width - 8), editBox.getX() + 4, editBox.getY() + 4, 0xFF4A2D31, false);
 			}
 		}
-		for (NeoStringWidget stringWidget : stringWidgets) {
-			if (stringWidget == null) continue;
+		for (Map.Entry<String, NeoStringWidget> entry : stringWidgets.entrySet()) {
+			if (entry.getValue() == null) continue;
+			NeoStringWidget stringWidget = entry.getValue();
 			stringWidget.render(gui, mouseX, mouseY, partialTick);
 		}
 		for (Map.Entry<String, Button> button : buttonWidgets.entrySet()) {
 			if (button.getValue() == null) continue;
 			button.getValue().render(gui, mouseX, mouseY, partialTick);
 		}
-		for (NeoItemWidget itemWidget : itemWidgets) {
-			if (itemWidget == null) continue;
+		for (Map.Entry<String, NeoItemWidget> entry : itemWidgets.entrySet()) {
+			if (entry.getValue() == null) continue;
+			NeoItemWidget itemWidget = entry.getValue();
 			itemWidget.render(gui, mouseX, mouseY, partialTick);
 		}
 	}
@@ -292,7 +295,6 @@ public class NeoScreen extends Screen {
 
 	@Override
 	public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-
 		if (keyCode == GLFW.GLFW_KEY_ENTER && hasShiftDown()) {
 			Button submitButton = this.buttonWidgets.get("submit");
 			if (submitButton == null) return true;
@@ -336,13 +338,69 @@ public class NeoScreen extends Screen {
 			}
 		}
 		return super.keyPressed(keyCode, scanCode, modifiers);
-//		return false;
 	}
 
-//	@Override
-//	public boolean keyReleased(int keyCode, int scanCode, int modifiers) {
-//		return super.keyReleased(keyCode, scanCode, modifiers);
-//	}
+	public EditBoxType getEditBoxType(String name) {
+		return this.editBoxTypes.get(name);
+	}
+
+	public String getEditBoxValue(String name) {
+		EditBox editBox = this.editBoxWidgets.get(name);
+		if (editBox == null) return null;
+		return editBox.getValue();
+	}
+
+	public String getMlEditBoxValue(String name) {
+		MultiLineEditBox editBox = this.mlEditBoxWidgets.get(name);
+		if (editBox == null) return null;
+		return editBox.getValue();
+	}
+
+	public NeoScreen setEditBoxValue(String name, String value) {
+		EditBox editBox = this.editBoxWidgets.get(name);
+		if (editBox == null) return this;
+		editBox.setValue(value);
+		return this;
+	}
+
+	public NeoScreen setMlEditBoxValue(String name, String value) {
+		MultiLineEditBox editBox = this.mlEditBoxWidgets.get(name);
+		if (editBox == null) return this;
+		editBox.setValue(value);
+		return this;
+	}
+
+	public NeoScreen setStringWidgetValue(String name, @NotNull Component label) {
+		return this.setStringWidgetValue(name, List.of(label));
+	}
+
+	public NeoScreen setStringWidgetValue(String name, @NotNull List<@NotNull Component> label) {
+		NeoStringWidget stringWidget = this.stringWidgets.get(name);
+		if (stringWidget == null) return this;
+		stringWidget.setLabel(label);
+		return this;
+	}
+
+	public NeoScreen setButtonLabel(String name, @NotNull Component label) {
+		Button button = this.buttonWidgets.get(name);
+		if (button == null) return this;
+		button.setMessage(label);
+		return this;
+	}
+
+	public NeoScreen setButtonDisabled(String name, boolean disabled) {
+		Button button = this.buttonWidgets.get(name);
+		if (button == null) return this;
+		button.active = !disabled;
+		return this;
+	}
+
+	public NeoScreen setItemWidgetStack(String name, ItemStack stack) {
+		NeoItemWidget itemWidget = this.itemWidgets.get(name);
+		if (itemWidget == null) return this;
+		itemWidget.setItemStack(stack);
+		return this;
+	}
 
 	public static void processIncomingPacket(@NotNull ScreenEventData screenEventData) {
 		switch (screenEventData.getType()) {

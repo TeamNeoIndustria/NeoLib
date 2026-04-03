@@ -26,26 +26,16 @@ public class NeoToastData implements Serializable {
 	public NeoToastData(@NotNull Component title, @NotNull Component message, @NotNull NeoTexture texture, long duration) {
 		this.title = NeoComponent.toJson(title);
 		this.message = NeoComponent.toJson(message);
-//		this.title = Component.Serializer.toJson(title, NeoLib.server.registryAccess());
-//		this.message = Component.Serializer.toJson(message, NeoLib.server.registryAccess());
 		this.textureName = texture.textureName;
 		this.duration = duration;
 	}
 
 	public Component getTitle() {
 		return NeoComponent.fromJson(title);
-//		if (NeoLib.server != null) {
-//			return Component.Serializer.fromJson(title, NeoLib.server.registryAccess());
-//		}
-//		return Component.Serializer.fromJson(title, Objects.requireNonNull(Minecraft.getInstance().getConnection()).registryAccess());
 	}
 
 	public Component getMessage() {
 		return NeoComponent.fromJson(message);
-//		if (NeoLib.server != null) {
-//			return Component.Serializer.fromJson(message, NeoLib.server.registryAccess());
-//		}
-//		return Component.Serializer.fromJson(message, Objects.requireNonNull(Minecraft.getInstance().getConnection()).registryAccess());
 	}
 
 	public NeoTexture getTexture() {

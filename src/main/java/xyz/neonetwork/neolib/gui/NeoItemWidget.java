@@ -5,10 +5,10 @@ import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.NotNull;
 
 public class NeoItemWidget {
-	private final ItemStack itemStack;
-	float x;
-	float y;
-	float scale;
+	private ItemStack itemStack;
+	private float x;
+	private float y;
+	private float scale;
 
 	public NeoItemWidget(@NotNull ItemStack itemStack, float centerX, float centerY, float scale) {
 		this.itemStack = itemStack;
@@ -17,6 +17,9 @@ public class NeoItemWidget {
 		this.scale = scale;
 	}
 
+	public void setItemStack(@NotNull ItemStack itemStack) {
+		this.itemStack = itemStack;
+	}
 	public void setX(float x) {
 		this.x = x;
 	}
