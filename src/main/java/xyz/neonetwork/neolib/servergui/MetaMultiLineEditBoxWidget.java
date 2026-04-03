@@ -6,13 +6,13 @@ import xyz.neonetwork.neolib.utilities.NeoComponent;
 
 import java.io.Serializable;
 
-public class MetaEditBoxWidget implements Serializable {
+public class MetaMultiLineEditBoxWidget implements Serializable {
 	private final String name;
 	private final String placeholder;
 	private final int maxLength;
 	private final EditBoxType type;
 
-	public MetaEditBoxWidget(String name, Component placeholder, int maxLength, EditBoxType type) {
+	public MetaMultiLineEditBoxWidget(String name, Component placeholder, int maxLength, EditBoxType type) {
 		this.name = name;
 		this.placeholder = NeoComponent.toJson(placeholder);
 		this.maxLength = maxLength;

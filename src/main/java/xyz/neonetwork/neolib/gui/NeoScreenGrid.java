@@ -1,20 +1,16 @@
 package xyz.neonetwork.neolib.gui;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.components.EditBox;
-import net.minecraft.client.gui.components.StringWidget;
-import net.minecraft.client.gui.components.Tooltip;
+import net.minecraft.client.gui.components.*;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.network.PacketDistributor;
+import org.jetbrains.annotations.NotNull;
 import xyz.neonetwork.neolib.NeoLib;
 import xyz.neonetwork.neolib.servergui.*;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 public class NeoScreenGrid {
 	private final int columnWidth;
@@ -27,9 +23,12 @@ public class NeoScreenGrid {
 	private Map<String, ScreenElementType> elementTypes = new HashMap<>();
 	private Map<String, ScreenGridCoordinate> grid = new HashMap<>();
 	private Map<String, EditBox> editBoxWidgets = new HashMap<>();
-	private Map<String, StringWidget> stringWidgets = new HashMap<>();
+	private Map<String, EditBoxType> editBoxTypes = new HashMap<>();
+	private Map<String, MultiLineEditBox> mlEditBoxWidgets = new HashMap<>();
+	private Map<String, NeoStringWidget> stringWidgets = new HashMap<>();
 	private Map<String, Button.Builder> buttonWidgets = new HashMap<>();
-	private Map<String, ItemWidget> itemWidgets =  new HashMap<>();
+	private List<String> disabledButtonWidgets = new ArrayList<>();
+	private Map<String, NeoItemWidget> itemWidgets =  new HashMap<>();
 
 	public NeoScreenGrid(ServerScreenData screenData) {
 		this.columnWidth = screenData.getColumnWidth();
@@ -47,18 +46,21 @@ public class NeoScreenGrid {
 				case EDIT_BOX:
 					MetaEditBoxWidget editBoxWidget = screenData.getMetaEditBoxes().get(screenElement.getKey());
 					if (editBoxWidget == null) continue;
-					this.addEditBoxWidget(coordinate.x, coordinate.y, coordinate.width, coordinate.height, editBoxWidget.getName(), editBoxWidget.getPlaceholder(), editBoxWidget.getMaxLength());
+					this.addEditBoxWidget(coordinate.x, coordinate.y, coordinate.width, coordinate.height, editBoxWidget.getName(), editBoxWidget.getPlaceholder(), editBoxWidget.getMaxLength(), editBoxWidget.getType());
 					break;
+				case ML_EDIT_BOX:
+					MetaMultiLineEditBoxWidget mlEditBoxWidget = screenData.getMetaMLEditBoxes().get(screenElement.getKey());
+					if (mlEditBoxWidget == null) continue;
+					this.addMultiLineEditBox(coordinate.x, coordinate.y, coordinate.width, coordinate.height, mlEditBoxWidget.getName(), mlEditBoxWidget.getPlaceholder(), mlEditBoxWidget.getMaxLength(), mlEditBoxWidget.getType());
 				case STRING:
 					MetaStringWidget stringWidget = screenData.getMetaStrings().get(screenElement.getKey());
 					if (stringWidget == null) continue;
-					this.addStringWidget(coordinate.x, coordinate.y, coordinate.width, coordinate.height, stringWidget.getName(), stringWidget.getLabel());
+					this.addStringWidget(coordinate.x, coordinate.y, coordinate.width, coordinate.height, stringWidget.getName(), stringWidget.getLabel(), stringWidget.getHorizontalAlign(), stringWidget.getVerticalAlign(), stringWidget.getLineHeight());
 					break;
 				case BUTTON:
 					MetaButtonWidget buttonWidget = screenData.getMetaButtons().get(screenElement.getKey());
 					if (buttonWidget == null) continue;
-					this.addButtonWidget(coordinate.x, coordinate.y, coordinate.width, coordinate.height, buttonWidget.getName(), buttonWidget.getLabel(), buttonWidget.getTooltip(), (grid, button) -> {
-						NeoLib.LOGGER.info("SERVER BUTTON PRESSED");
+					this.addButtonWidget(coordinate.x, coordinate.y, coordinate.width, coordinate.height, buttonWidget.getName(), buttonWidget.getLabel(), buttonWidget.getTooltip(), buttonWidget.isDisabled(), (grid, button) -> {
 						PacketDistributor.sendToServer(new ScreenEventPacket(new ScreenEventData(screenData.getUUID(), ScreenEventType.BUTTON, buttonWidget.getName(), this.getAllEditBoxValues())));
 					});
 					break;
@@ -107,6 +109,7 @@ public class NeoScreenGrid {
 	private boolean spaceOccupied(int x, int y, int colspan, int rowspan) {
 		if (x + colspan > this.columns || y + rowspan > this.rows) {
 			NeoLib.LOGGER.warn("ScreenGrid#spaceOccupied: Invalid column/row out of bounds X:{}, Y:{}", x, y);
+			return true;
 		}
 
 		for (int currentX = x; currentX < x + colspan; currentX++) {
@@ -132,27 +135,65 @@ public class NeoScreenGrid {
 		return true;
 	}
 
-	public NeoScreenGrid addEditBoxWidget(int column, int row, int colspan, int rowspan, String name, Component placeholder, int maxLength) {
+	public NeoScreenGrid addEditBoxWidget(int column, int row, int colspan, int rowspan, @NotNull String name, @NotNull Component placeholder, int maxLength) {
+		return addEditBoxWidget(column, row, colspan, rowspan, name, placeholder, maxLength, EditBoxType.TEXT);
+	}
+
+	public NeoScreenGrid addEditBoxWidget(int column, int row, int colspan, int rowspan, @NotNull String name, @NotNull Component placeholder, int maxLength, EditBoxType type) {
 		if (this.nameExists(name)) return this;
 		if (!setOccupied(column, row, colspan, rowspan, name, ScreenElementType.EDIT_BOX)) return this;
-
-		EditBox editBox = new EditBox(Minecraft.getInstance().font, 0, 0, placeholder);
+		ScreenGridCoordinate coordinate = this.calculateOffsets(name, 0, 0);
+		EditBox editBox = new EditBox(Minecraft.getInstance().font, coordinate.width, coordinate.height, placeholder);
 		editBox.setMaxLength(maxLength);
 		this.editBoxWidgets.put(name, editBox);
+		this.editBoxTypes.put(name, type);
+		return this;
+	}
+
+	public NeoScreenGrid addMultiLineEditBox(int column, int row, int colspan, int rowspan, @NotNull String name, @NotNull Component placeholder, int maxLength) {
+		return this.addMultiLineEditBox(column, row, colspan, rowspan, name, placeholder, maxLength, EditBoxType.TEXT);
+	}
+
+	public NeoScreenGrid addMultiLineEditBox(int column, int row, int colspan, int rowspan, @NotNull String name, @NotNull Component placeholder, int maxLength, EditBoxType type) {
+		if (this.nameExists(name)) return this;
+		if (!setOccupied(column, row, colspan, rowspan, name, ScreenElementType.ML_EDIT_BOX)) return this;
+		ScreenGridCoordinate coordinate = this.calculateOffsets(name, 0, 0);
+		MultiLineEditBox editBox = new MultiLineEditBox(Minecraft.getInstance().font, 0, 0, coordinate.width, coordinate.height, placeholder, placeholder);
+		editBox.setCharacterLimit(maxLength);
+		this.mlEditBoxWidgets.put(name, editBox);
+		this.editBoxTypes.put(name, type);
 		return this;
 	}
 
 	public NeoScreenGrid addStringWidget(int column, int row, int colspan, int rowspan, String name, Component label) {
+		return this.addStringWidget(column, row, colspan, rowspan, name, List.of(label), NeoStringAlign.Horizontal.CENTER, NeoStringAlign.Vertical.MIDDLE, 10);
+	}
+
+	public NeoScreenGrid addStringWidget(int column, int row, int colspan, int rowspan, String name, List<Component> label) {
+		return this.addStringWidget(column, row, colspan, rowspan, name, label, NeoStringAlign.Horizontal.CENTER, NeoStringAlign.Vertical.MIDDLE, 10);
+	}
+
+	public NeoScreenGrid addStringWidget(int column, int row, int colspan, int rowspan, String name, Component label, NeoStringAlign.Horizontal horizontalAlign, NeoStringAlign.Vertical verticalAlign) {
+		return this.addStringWidget(column, row, colspan, rowspan, name, List.of(label), horizontalAlign, verticalAlign, 10);
+	}
+
+	public NeoScreenGrid addStringWidget(int column, int row, int colspan, int rowspan, String name, List<Component> label, NeoStringAlign.Horizontal horizontalAlign, NeoStringAlign.Vertical verticalAlign) {
+		return this.addStringWidget(column, row, colspan, rowspan, name, label, horizontalAlign, verticalAlign, 10);
+	}
+
+	public NeoScreenGrid addStringWidget(int column, int row, int colspan, int rowspan, String name, Component label, NeoStringAlign.Horizontal horizontalAlign, NeoStringAlign.Vertical verticalAlign, int lineHeight) {
+		return this.addStringWidget(column, row, colspan, rowspan, name, List.of(label));
+	}
+
+	public NeoScreenGrid addStringWidget(int column, int row, int colspan, int rowspan, String name, List<Component> label, NeoStringAlign.Horizontal horizontalAlign, NeoStringAlign.Vertical verticalAlign, int lineHeight) {
 		if (this.nameExists(name)) return this;
 		if (!setOccupied(column, row, colspan, rowspan, name, ScreenElementType.STRING)) return this;
-
-		StringWidget stringWidget = new StringWidget(0, 0, 0, 0, label, Minecraft.getInstance().font);
-		stringWidget.alignLeft();
+		NeoStringWidget stringWidget = new NeoStringWidget(0, 0, 0, 0, label, horizontalAlign, verticalAlign, lineHeight, Minecraft.getInstance().font);
 		this.stringWidgets.put(name, stringWidget);
 		return this;
 	}
 
-	public NeoScreenGrid addButtonWidget(int column, int row, int colspan, int rowspan, String name, Component label, Component tooltip, OnPress onPressCallback) {
+	public NeoScreenGrid addButtonWidget(int column, int row, int colspan, int rowspan, String name, Component label, Component tooltip, boolean disabled, OnPress onPressCallback) {
 		if (this.nameExists(name)) return this;
 		if (!setOccupied(column, row, colspan, rowspan, name, ScreenElementType.BUTTON)) return this;
 
@@ -161,13 +202,14 @@ public class NeoScreenGrid {
 		});
 		if (tooltip != null) button.tooltip(Tooltip.create(tooltip));
 		this.buttonWidgets.put(name, button);
+		if (disabled) this.disabledButtonWidgets.add(name);
 		return this;
 	}
 	public NeoScreenGrid addItemWidget(int column, int row, int colspan, int rowspan, String name, Item item) {
 		if (this.nameExists(name)) return this;
 		if (!setOccupied(column, row, colspan, rowspan, name, ScreenElementType.ITEM)) return this;
 
-		ItemWidget itemWidget = new ItemWidget(new ItemStack(item, 1), 0, 0, 0);
+		NeoItemWidget itemWidget = new NeoItemWidget(new ItemStack(item, 1), 0, 0, 0);
 		this.itemWidgets.put(name, itemWidget);
 		return this;
 	}
@@ -183,9 +225,28 @@ public class NeoScreenGrid {
 		return editBox;
 	}
 
-	public StringWidget getStringWidget(String name, int offsetX, int offsetY) {
+	public EditBoxType getEditBoxType(String name) {
+		return this.editBoxTypes.get(name);
+	}
+
+	public MultiLineEditBox getMLEditBoxWidget(String name, int offsetX, int offsetY) {
 		ScreenGridCoordinate coordinate = this.calculateOffsets(name, offsetX, offsetY);
-		StringWidget stringWidget = this.stringWidgets.get(name);
+		MultiLineEditBox editBox = this.mlEditBoxWidgets.get(name);
+		if (coordinate == null || editBox == null) return null;
+		editBox.setX(coordinate.x);
+		editBox.setY(coordinate.y);
+		editBox.setWidth(coordinate.width);
+		editBox.setHeight(coordinate.height);
+		return editBox;
+	}
+
+	public EditBoxType getMLEditBoxType(String name) {
+		return this.editBoxTypes.get(name);
+	}
+
+	public NeoStringWidget getStringWidget(String name, int offsetX, int offsetY) {
+		ScreenGridCoordinate coordinate = this.calculateOffsets(name, offsetX, offsetY);
+		NeoStringWidget stringWidget = this.stringWidgets.get(name);
 		if (coordinate == null || stringWidget == null) return null;
 		stringWidget.setX(coordinate.x);
 		stringWidget.setY(coordinate.y);
@@ -196,15 +257,17 @@ public class NeoScreenGrid {
 
 	public Button getButtonWidget(String name, int offsetX, int offsetY) {
 		ScreenGridCoordinate coordinate = this.calculateOffsets(name, offsetX, offsetY);
-		Button.Builder button = this.buttonWidgets.get(name);
-		if (coordinate == null || button == null) return null;
-		button.bounds(coordinate.x, coordinate.y, coordinate.width, coordinate.height);
-		return button.build();
+		Button.Builder buttonBuilder = this.buttonWidgets.get(name);
+		if (coordinate == null || buttonBuilder == null) return null;
+		buttonBuilder.bounds(coordinate.x, coordinate.y, coordinate.width, coordinate.height);
+		Button button = buttonBuilder.build();
+		if (this.disabledButtonWidgets.contains(name)) button.active = false;
+		return button;
 	}
 
-	public ItemWidget getItemWidget(String name, int offsetX, int offsetY) {
+	public NeoItemWidget getItemWidget(String name, int offsetX, int offsetY) {
 		ScreenGridCoordinate coordinate = this.calculateOffsets(name, offsetX, offsetY);
-		ItemWidget itemWidget = this.itemWidgets.get(name);
+		NeoItemWidget itemWidget = this.itemWidgets.get(name);
 		if (coordinate == null || itemWidget == null) return null;
 		itemWidget.setX(coordinate.x + (coordinate.width / 2f));
 		itemWidget.setY(coordinate.y + (coordinate.height / 2f));
@@ -222,6 +285,10 @@ public class NeoScreenGrid {
 	public Map<String, String> getAllEditBoxValues() {
 		Map<String, String> values = new HashMap<>();
 		for (Map.Entry<String, EditBox> entry : this.editBoxWidgets.entrySet()) {
+			if (entry == null || entry.getKey() == null || entry.getValue() == null) continue;
+			values.put(entry.getKey(), entry.getValue().getValue());
+		}
+		for (Map.Entry<String, MultiLineEditBox> entry : this.mlEditBoxWidgets.entrySet()) {
 			if (entry == null || entry.getKey() == null || entry.getValue() == null) continue;
 			values.put(entry.getKey(), entry.getValue().getValue());
 		}

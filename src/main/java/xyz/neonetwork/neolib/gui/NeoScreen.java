@@ -5,22 +5,20 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
-import net.minecraft.client.gui.components.StringWidget;
+import net.minecraft.client.gui.components.MultiLineEditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.FormattedCharSequence;
-import net.minecraft.world.entity.player.Player;
-import net.neoforged.neoforge.network.PacketDistributor;
 import org.jetbrains.annotations.NotNull;
+import org.lwjgl.glfw.GLFW;
 import xyz.neonetwork.neolib.NeoLib;
-import xyz.neonetwork.neolib.servergui.NeoServerScreen;
-import xyz.neonetwork.neolib.servergui.NeoServerScreenGrid;
 import xyz.neonetwork.neolib.textures.NeoTexture;
 import xyz.neonetwork.neolib.utilities.NeoComponent;
 
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class NeoScreen extends Screen {
 
@@ -70,6 +68,7 @@ public class NeoScreen extends Screen {
 
 	private static void drawTitle(GuiGraphics gui, ResourceLocation texture, int segmentRes, int xPadding, int yPadding, Font font, Component title, int startX, int startY, int width) {
 		int titleWidth = width - 48;
+		if (title == null) title = Component.literal("");
 		FormattedCharSequence formattedcharsequence = NeoComponent.autoTruncateText(font, title, titleWidth);
 		int tileXQuantity = (int) Math.ceil((double) font.width(formattedcharsequence) / 2) + 2; // +2?
 
@@ -113,14 +112,17 @@ public class NeoScreen extends Screen {
 	}
 
 	private final Map<String, EditBox> editBoxWidgets = new HashMap<>();
-	private final List<StringWidget> stringWidgets = new ArrayList<>();
-	private final List<Button> buttonWidgets = new ArrayList<>();
-	private final List<ItemWidget> itemWidgets = new ArrayList<>();
+	private final Map<String, EditBoxType> editBoxTypes = new HashMap<>();
+	private final Map<String, MultiLineEditBox> mlEditBoxWidgets = new HashMap<>();
+	private final List<NeoStringWidget> stringWidgets = new ArrayList<>();
+	private final Map<String, Button> buttonWidgets = new HashMap<>();
+	private final List<NeoItemWidget> itemWidgets = new ArrayList<>();
 
 	@Override
 	public void init() {
 		super.init();
 		editBoxWidgets.clear();
+		mlEditBoxWidgets.clear();
 		stringWidgets.clear();
 		buttonWidgets.clear();
 		itemWidgets.clear();
@@ -128,32 +130,41 @@ public class NeoScreen extends Screen {
 
 		this.offsetX = (width - imageWidth) / 2;
 		this.offsetY = (height - imageHeight) / 2;
-		NeoLib.LOGGER.info("OffsetX: {}, OffsetY: {}", this.offsetX, this.offsetY);
 		for (String name : this.grid.elementNames()) {
-			NeoLib.LOGGER.info("Looping grid element: {}", name);
 			ScreenElementType elementType = grid.getElementType(name);
 			if (elementType == null) continue;
 			switch (elementType) {
 				case ScreenElementType.EDIT_BOX:
 					EditBox editBox = grid.getEditBoxWidget(name, offsetX + 16, offsetY + 16);
+					EditBoxType editBoxType = grid.getEditBoxType(name);
 					if (editBox == null) break;
+					if (editBoxType == null) editBoxType = EditBoxType.TEXT;
 					editBoxWidgets.put(name, editBox);
+					editBoxTypes.put(name, editBoxType);
 					addWidget(editBox);
 					break;
+				case ScreenElementType.ML_EDIT_BOX:
+					MultiLineEditBox mlEditBox = grid.getMLEditBoxWidget(name, offsetX + 16, offsetY + 16);
+					EditBoxType mlEditBoxType = grid.getMLEditBoxType(name);
+					if (mlEditBox == null) break;
+					if (mlEditBoxType == null) mlEditBoxType = EditBoxType.TEXT;
+					mlEditBoxWidgets.put(name, mlEditBox);
+					editBoxTypes.put(name, mlEditBoxType);
+					addWidget(mlEditBox);
+					break;
 				case ScreenElementType.STRING:
-					StringWidget stringWidget = grid.getStringWidget(name, offsetX + 16, offsetY + 16);
+					NeoStringWidget stringWidget = grid.getStringWidget(name, offsetX + 16, offsetY + 16);
 					if (stringWidget == null) break;
 					stringWidgets.add(stringWidget);
-					addWidget(stringWidget);
 					break;
 				case ScreenElementType.BUTTON:
 					Button button = grid.getButtonWidget(name, offsetX + 16, offsetY + 16);
 					if (button == null) break;
-					buttonWidgets.add(button);
+					buttonWidgets.put(name, button);
 					addWidget(button);
 					break;
 				case ScreenElementType.ITEM:
-					ItemWidget itemWidget = grid.getItemWidget(name, offsetX + 16, offsetY + 16);
+					NeoItemWidget itemWidget = grid.getItemWidget(name, offsetX + 16, offsetY + 16);
 					if (itemWidget == null) break;
 					itemWidgets.add(itemWidget);
 					break;
@@ -169,34 +180,169 @@ public class NeoScreen extends Screen {
 		drawNineSlice(gui, texture.BACKGROUND_MAIN_BODY, 16, offsetX, offsetY, imageWidth, imageHeight);
 		drawTitle(gui, texture.BACKGROUND_TITLE_BOX, 16, 4, 4, this.font, title, offsetX, offsetY, imageWidth);
 
-		for (EditBox editBox : editBoxWidgets.values()) {
-			if (editBox == null) continue;
+		for (Map.Entry<String, EditBox> entry : editBoxWidgets.entrySet()) {
+			if (entry.getValue() == null) continue;
+			EditBox editBox = entry.getValue();
 			editBox.render(gui, mouseX, mouseY, partialTick);
 			if (editBox.getValue().isBlank() && !editBox.isFocused()) {
-				gui.drawString(font, editBox.getMessage(), editBox.getX() + 4, editBox.getY() + 4, 0xff4A2D31, false);
+				gui.drawString(font, NeoComponent.autoTruncateText(font, editBox.getMessage(), width - 8), editBox.getX() + 4, editBox.getY() + 4, 0xFF4A2D31, false);
 			}
 		}
-		for (StringWidget stringWidget : stringWidgets) {
+		for (Map.Entry<String, MultiLineEditBox> entry : mlEditBoxWidgets.entrySet()) {
+			if (entry.getValue() == null) continue;
+			MultiLineEditBox editBox = entry.getValue();
+			editBox.render(gui, mouseX, mouseY, partialTick);
+			if (editBox.getValue().isBlank() && !editBox.isFocused()) {
+				gui.drawString(font, NeoComponent.autoTruncateText(font, editBox.getMessage(), width - 8), editBox.getX() + 4, editBox.getY() + 4, 0xFF4A2D31, false);
+			}
+		}
+		for (NeoStringWidget stringWidget : stringWidgets) {
 			if (stringWidget == null) continue;
 			stringWidget.render(gui, mouseX, mouseY, partialTick);
 		}
-		for (Button button : buttonWidgets) {
-			if (button == null) continue;
-			button.render(gui, mouseX, mouseY, partialTick);
+		for (Map.Entry<String, Button> button : buttonWidgets.entrySet()) {
+			if (button.getValue() == null) continue;
+			button.getValue().render(gui, mouseX, mouseY, partialTick);
 		}
-		for (ItemWidget itemWidget : itemWidgets) {
+		for (NeoItemWidget itemWidget : itemWidgets) {
 			if (itemWidget == null) continue;
 			itemWidget.render(gui, mouseX, mouseY, partialTick);
 		}
 	}
 
-	public void show() {
-		if (Minecraft.getInstance().screen != null) {
+	public void show(boolean preventScreenClose) {
+		if (!preventScreenClose && Minecraft.getInstance().screen != null) {
 			Minecraft.getInstance().screen.onClose();
 			Minecraft.getInstance().setScreen(null);
 		}
 		Minecraft.getInstance().setScreen(this);
 	}
+
+	private static final Pattern allowedASCIIRegex = Pattern.compile("^([ -~]*)$");
+	private static final Pattern allowedIntRegex = Pattern.compile("^(-?\\d*)$");
+	private static final Pattern allowedUintRegex = Pattern.compile("^(\\d*)$");
+
+	@Override
+	public boolean charTyped(char codePoint, int modifiers) {
+		for (Map.Entry<String, EditBox> entry : this.editBoxWidgets.entrySet()) {
+			EditBox editBox = entry.getValue();
+			if (editBox == null || !editBox.isFocused()) continue;
+			EditBoxType type = this.editBoxTypes.get(entry.getKey());
+			if (type == null) continue;
+			Pattern typePattern = switch (type) {
+				case TEXT -> null;
+				case ASCII -> allowedASCIIRegex;
+				case INT -> allowedIntRegex;
+				case UINT -> allowedUintRegex;
+			};
+			switch (type) {
+				case ASCII:
+				case INT:
+				case UINT:
+					String previousState = editBox.getValue();
+					int previousCursorPos = editBox.getCursorPosition();
+					Matcher matcher = typePattern.matcher(previousState);
+					if (!matcher.find()) previousState = "";
+					boolean charInserted = editBox.charTyped(codePoint, modifiers);
+					if (!charInserted) return false;
+					if (typePattern.matcher(editBox.getValue()).find()) {
+						return true;
+					} else {
+						editBox.setValue(previousState);
+						editBox.setCursorPosition(previousCursorPos);
+						editBox.setHighlightPos(editBox.getCursorPosition());
+						return false;
+					}
+				default: // Default + Text
+					return editBox.charTyped(codePoint, modifiers);
+			}
+		}
+		for (Map.Entry<String, MultiLineEditBox> entry : this.mlEditBoxWidgets.entrySet()) {
+			MultiLineEditBox editBox = entry.getValue();
+			if (editBox == null || !editBox.isFocused()) continue;
+			EditBoxType type = this.editBoxTypes.get(entry.getKey());
+			if (type == null) continue;
+			Pattern typePattern = switch (type) {
+				case TEXT -> null;
+				case ASCII -> allowedASCIIRegex;
+				case INT -> allowedIntRegex;
+				case UINT -> allowedUintRegex;
+			};
+			switch (type) {
+				case ASCII:
+				case INT:
+				case UINT:
+					String previousState = editBox.getValue();
+					Matcher matcher = typePattern.matcher(previousState);
+					if (!matcher.find()) previousState = "";
+					boolean charInserted = editBox.charTyped(codePoint, modifiers);
+					if (!charInserted) return false;
+					if (typePattern.matcher(editBox.getValue()).find()) {
+						return true;
+					} else {
+						editBox.setValue(previousState);
+						return false;
+					}
+				default: // Default + Text
+					return editBox.charTyped(codePoint, modifiers);
+			}
+		}
+		return true;
+	}
+
+	@Override
+	public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+
+		if (keyCode == GLFW.GLFW_KEY_ENTER && hasShiftDown()) {
+			Button submitButton = this.buttonWidgets.get("submit");
+			if (submitButton == null) return true;
+			submitButton.onPress();
+			return false;
+		}
+
+		for (Map.Entry<String, EditBox> entry : this.editBoxWidgets.entrySet()) {
+			if (entry.getValue() == null) continue;
+			EditBox editBox = entry.getValue();
+			if (!editBox.isFocused()) continue;
+
+			if (this.editBoxTypes.get(entry.getKey()) == EditBoxType.INT
+				|| this.editBoxTypes.get(entry.getKey()) == EditBoxType.UINT
+				|| this.editBoxTypes.get(entry.getKey()) == EditBoxType.ASCII) {
+				if (isPaste(keyCode)) {
+					return false;
+				}
+			}
+
+			if (!editBox.keyPressed(keyCode, scanCode, modifiers)) {
+				return editBox.isFocused() && keyCode != 256 || super.keyPressed(keyCode, scanCode, modifiers);
+			}
+			return false;
+		}
+		for (Map.Entry<String, MultiLineEditBox> entry : this.mlEditBoxWidgets.entrySet()) {
+			if (entry.getValue() == null) continue;
+			MultiLineEditBox editBox = entry.getValue();
+			if (!editBox.isFocused()) continue;
+
+			if (this.editBoxTypes.get(entry.getKey()) == EditBoxType.INT
+				|| this.editBoxTypes.get(entry.getKey()) == EditBoxType.UINT
+				|| this.editBoxTypes.get(entry.getKey()) == EditBoxType.ASCII) {
+				if (isPaste(keyCode)) {
+					return false;
+				}
+			}
+
+			if (!editBox.keyPressed(keyCode, scanCode, modifiers)) {
+				return editBox.isFocused() && keyCode != 256 || super.keyPressed(keyCode, scanCode, modifiers);
+			}
+		}
+		return super.keyPressed(keyCode, scanCode, modifiers);
+//		return false;
+	}
+
+//	@Override
+//	public boolean keyReleased(int keyCode, int scanCode, int modifiers) {
+//		return super.keyReleased(keyCode, scanCode, modifiers);
+//	}
 
 	public static void processIncomingPacket(@NotNull ScreenEventData screenEventData) {
 		switch (screenEventData.getType()) {

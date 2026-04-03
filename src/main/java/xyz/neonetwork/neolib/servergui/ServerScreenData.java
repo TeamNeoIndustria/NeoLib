@@ -20,6 +20,7 @@ public class ServerScreenData implements Serializable {
 	private final UUID uuid;
 	private final String title;
 	private final String texture;
+	private final boolean preventScreenClose;
 
 	private final int columnWidth;
 	private final int rowHeight;
@@ -30,14 +31,16 @@ public class ServerScreenData implements Serializable {
 	private final Map<String, ScreenElementType> elementTypes;
 	private final Map<String, ScreenGridCoordinate> grid;
 	private final Map<String, MetaEditBoxWidget> metaEditBoxes;
+	private final Map<String, MetaMultiLineEditBoxWidget> metaMLEditBoxes;
 	private final Map<String, MetaStringWidget> metaStrings;
 	private final Map<String, MetaButtonWidget> metaButtons;
 	private final Map<String, MetaItemWidget> metaItems;
 
-	public ServerScreenData(UUID uuid, Component title, NeoTexture texture, NeoServerScreenGrid screenGrid) {
+	public ServerScreenData(UUID uuid, Component title, NeoTexture texture, NeoServerScreenGrid screenGrid, boolean preventScreenClose) {
 		this.uuid = uuid;
 		this.title = NeoComponent.toJson(title);
 		this.texture = texture.textureName;
+		this.preventScreenClose = preventScreenClose;
 		this.columnWidth = screenGrid.getColumnWidth();
 		this.rowHeight = screenGrid.getRowHeight();
 		this.padding = screenGrid.getPadding();
@@ -46,6 +49,7 @@ public class ServerScreenData implements Serializable {
 		this.elementTypes = screenGrid.getScreenElementTypes();
 		this.grid = screenGrid.getScreenGridCoordinates();
 		this.metaEditBoxes = screenGrid.getMetaEditBoxes();
+		this.metaMLEditBoxes = screenGrid.getMetaMLEditBoxes();
 		this.metaStrings = screenGrid.getMetaStrings();
 		this.metaButtons = screenGrid.getMetaButtons();
 		this.metaItems = screenGrid.getMetaItems();
@@ -61,6 +65,10 @@ public class ServerScreenData implements Serializable {
 
 	public NeoTexture getTexture() {
 		return NeoTexture.getTexture(this.texture);
+	}
+
+	public boolean getPreventScreenClose() {
+		return this.preventScreenClose;
 	}
 
 	public int getColumnWidth() {
@@ -93,6 +101,10 @@ public class ServerScreenData implements Serializable {
 
 	public Map<String, MetaEditBoxWidget> getMetaEditBoxes() {
 		return this.metaEditBoxes;
+	}
+
+	public Map<String, MetaMultiLineEditBoxWidget> getMetaMLEditBoxes() {
+		return this.metaMLEditBoxes;
 	}
 
 	public Map<String, MetaStringWidget> getMetaStrings() {

@@ -2,13 +2,13 @@ package xyz.neonetwork.neolib.servergui;
 
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.Item;
-import net.minecraft.world.item.ItemStack;
+import org.jetbrains.annotations.NotNull;
 import xyz.neonetwork.neolib.NeoLib;
-import xyz.neonetwork.neolib.gui.ScreenElementType;
-import xyz.neonetwork.neolib.gui.ScreenGridCoordinate;
+import xyz.neonetwork.neolib.gui.*;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class NeoServerScreenGrid {
@@ -23,6 +23,7 @@ public class NeoServerScreenGrid {
 	private final Map<String, ScreenElementType> elementTypes = new HashMap<>();
 	private final Map<String, ScreenGridCoordinate> grid = new HashMap<>();
 	private final Map<String, MetaEditBoxWidget> metaEditBoxes = new HashMap<>();
+	private final Map<String, MetaMultiLineEditBoxWidget> metaMLEditBoxes = new HashMap<>();
 	private final Map<String, MetaStringWidget> metaStrings = new HashMap<>();
 	private final Map<String, MetaButtonWidget> metaButtons = new HashMap<>();
 	private final Map<String, OnPress> metaButtonCallbacks = new HashMap<>();
@@ -65,6 +66,7 @@ public class NeoServerScreenGrid {
 	private boolean spaceOccupied(int x, int y, int colspan, int rowspan) {
 		if (x + colspan > this.columns || y + rowspan > this.rows) {
 			NeoLib.LOGGER.warn("ScreenGrid#spaceOccupied: Invalid column/row out of bounds X:{}, Y:{}", x, y);
+			return true;
 		}
 
 		for (int currentX = x; currentX < x + colspan; currentX++) {
@@ -90,29 +92,66 @@ public class NeoServerScreenGrid {
 		return true;
 	}
 
-	public NeoServerScreenGrid addEditBoxWidget(int column, int row, int colspan, int rowspan, String name, Component placeholder, int maxLength) {
+	public NeoServerScreenGrid addEditBoxWidget(int column, int row, int colspan, int rowspan, @NotNull String name, @NotNull Component placeholder, int maxLength) {
+		return addEditBoxWidget(column, row, colspan, rowspan, name, placeholder, maxLength, EditBoxType.TEXT);
+	}
+
+	public NeoServerScreenGrid addEditBoxWidget(int column, int row, int colspan, int rowspan, @NotNull String name, @NotNull Component placeholder, int maxLength, EditBoxType type) {
 		if (this.nameExists(name)) return this;
 		if (!setOccupied(column, row, colspan, rowspan, name, ScreenElementType.EDIT_BOX)) return this;
 
-		MetaEditBoxWidget editBox = new MetaEditBoxWidget(name, placeholder, maxLength);
+		MetaEditBoxWidget editBox = new MetaEditBoxWidget(name, placeholder, maxLength, type);
 		this.metaEditBoxes.put(name, editBox);
 		return this;
 	}
 
+	public NeoServerScreenGrid addMultiLineEditBox(int column, int row, int colspan, int rowspan, @NotNull String name, @NotNull Component placeholder, int maxLength) {
+		return this.addMultiLineEditBox(column, row, colspan, rowspan, name, placeholder, maxLength, EditBoxType.TEXT);
+	}
+
+	public NeoServerScreenGrid addMultiLineEditBox(int column, int row, int colspan, int rowspan, @NotNull String name, @NotNull Component placeholder, int maxLength, EditBoxType type) {
+		if (this.nameExists(name)) return this;
+		if (!setOccupied(column, row, colspan, rowspan, name, ScreenElementType.ML_EDIT_BOX)) return this;
+
+		MetaMultiLineEditBoxWidget editBox = new MetaMultiLineEditBoxWidget(name, placeholder, maxLength, type);
+		this.metaMLEditBoxes.put(name, editBox);
+		return this;
+	}
+
 	public NeoServerScreenGrid addStringWidget(int column, int row, int colspan, int rowspan, String name, Component label) {
+		return this.addStringWidget(column, row, colspan, rowspan, name, List.of(label), NeoStringAlign.Horizontal.CENTER, NeoStringAlign.Vertical.MIDDLE, 10);
+	}
+
+	public NeoServerScreenGrid addStringWidget(int column, int row, int colspan, int rowspan, String name, List<Component> label) {
+		return this.addStringWidget(column, row, colspan, rowspan, name, label, NeoStringAlign.Horizontal.CENTER, NeoStringAlign.Vertical.MIDDLE, 10);
+	}
+
+	public NeoServerScreenGrid addStringWidget(int column, int row, int colspan, int rowspan, String name, Component label, NeoStringAlign.Horizontal horizontalAlign, NeoStringAlign.Vertical verticalAlign) {
+		return this.addStringWidget(column, row, colspan, rowspan, name, List.of(label), horizontalAlign, verticalAlign, 10);
+	}
+
+	public NeoServerScreenGrid addStringWidget(int column, int row, int colspan, int rowspan, String name, List<Component> label, NeoStringAlign.Horizontal horizontalAlign, NeoStringAlign.Vertical verticalAlign) {
+		return this.addStringWidget(column, row, colspan, rowspan, name, label, horizontalAlign, verticalAlign, 10);
+	}
+
+	public NeoServerScreenGrid addStringWidget(int column, int row, int colspan, int rowspan, String name, Component label, NeoStringAlign.Horizontal horizontalAlign, NeoStringAlign.Vertical verticalAlign, int lineHeight) {
+		return this.addStringWidget(column, row, colspan, rowspan, name, List.of(label), horizontalAlign, verticalAlign, lineHeight);
+	}
+
+	public NeoServerScreenGrid addStringWidget(int column, int row, int colspan, int rowspan, String name, List<Component> label, NeoStringAlign.Horizontal horizontalAlign, NeoStringAlign.Vertical verticalAlign, int lineHeight) {
 		if (this.nameExists(name)) return this;
 		if (!setOccupied(column, row, colspan, rowspan, name, ScreenElementType.STRING)) return this;
 
-		MetaStringWidget stringWidget = new MetaStringWidget(name, label);
+		MetaStringWidget stringWidget = new MetaStringWidget(name, label, horizontalAlign, verticalAlign, lineHeight);
 		this.metaStrings.put(name, stringWidget);
 		return this;
 	}
 
-	public NeoServerScreenGrid addButtonWidget(int column, int row, int colspan, int rowspan, String name, Component label, Component tooltip, OnPress onPressCallback) {
+	public NeoServerScreenGrid addButtonWidget(int column, int row, int colspan, int rowspan, String name, Component label, Component tooltip, boolean disabled, OnPress onPressCallback) {
 		if (this.nameExists(name)) return this;
 		if (!setOccupied(column, row, colspan, rowspan, name, ScreenElementType.BUTTON)) return this;
 
-		MetaButtonWidget buttonWidget = new MetaButtonWidget(name, label, tooltip);
+		MetaButtonWidget buttonWidget = new MetaButtonWidget(name, label, tooltip, disabled);
 		this.metaButtons.put(name, buttonWidget);
 		this.metaButtonCallbacks.put(name, onPressCallback);
 		return this;
@@ -159,12 +198,12 @@ public class NeoServerScreenGrid {
 		return this.metaEditBoxes;
 	}
 
-	public Map<String, MetaStringWidget> getMetaStrings() {
-		return this.metaStrings;
+	public Map<String, MetaMultiLineEditBoxWidget> getMetaMLEditBoxes() {
+		return this.metaMLEditBoxes;
 	}
 
-	public OnPress getCallback(String name) {
-		return this.metaButtonCallbacks.get(name);
+	public Map<String, MetaStringWidget> getMetaStrings() {
+		return this.metaStrings;
 	}
 
 	public Map<String, MetaButtonWidget> getMetaButtons() {
@@ -173,6 +212,10 @@ public class NeoServerScreenGrid {
 
 	public Map<String, MetaItemWidget> getMetaItems() {
 		return this.metaItems;
+	}
+
+	public OnPress getCallback(String name) {
+		return this.metaButtonCallbacks.get(name);
 	}
 
 	public interface OnPress {

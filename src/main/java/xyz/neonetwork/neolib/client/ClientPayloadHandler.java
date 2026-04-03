@@ -25,7 +25,7 @@ public class ClientPayloadHandler {
 		NeoScreen screen = new NeoScreen(screenData.getUUID(), screenData.getTitle(), screenData.getTexture(), grid, (finalGrid) -> {
 			PacketDistributor.sendToServer(new ScreenEventPacket(new ScreenEventData(screenData.getUUID(), ScreenEventType.CLOSE, null, finalGrid.getAllEditBoxValues())));
 		});
-		screen.show();
+		screen.show(screenData.getPreventScreenClose());
 	}
 
 	public static void handleScreenEventPacket(final ScreenEventPacket screenEventPacket, final IPayloadContext context) {

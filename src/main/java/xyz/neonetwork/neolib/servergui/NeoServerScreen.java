@@ -11,6 +11,7 @@ import xyz.neonetwork.neolib.textures.NeoTexture;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 
 public class NeoServerScreen {
@@ -42,9 +43,9 @@ public class NeoServerScreen {
 		return this.uuid;
 	}
 
-	public void show() {
+	public void show(boolean preventScreenClose) {
 		if (player == null) return;
-		PacketDistributor.sendToPlayer(player, new ServerScreenPacket(new ServerScreenData(this.uuid, this.title, this.texture, this.grid)));
+		PacketDistributor.sendToPlayer(player, new ServerScreenPacket(new ServerScreenData(this.uuid, this.title, this.texture, this.grid, true)));
 	}
 
 	public void close() {
@@ -56,8 +57,9 @@ public class NeoServerScreen {
 		return screenMap.get(screenUUID);
 	}
 
-	public static void processIncomingPacket(@NotNull ScreenEventData screenEventData) {
+	public static void processIncomingPacket(String playerUUID, @NotNull ScreenEventData screenEventData) {
 		NeoServerScreen serverScreen = getServerScreen(screenEventData.getUUID());
+		if (!Objects.equals(playerUUID, serverScreen.player.getStringUUID())) return;
 		switch (screenEventData.getType()) {
 			case BUTTON:
 				NeoServerScreenGrid.OnPress callback = serverScreen.grid.getCallback(screenEventData.getName());

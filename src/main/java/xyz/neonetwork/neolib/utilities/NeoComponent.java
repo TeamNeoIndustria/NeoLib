@@ -9,6 +9,7 @@ import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.FormattedText;
 import net.minecraft.util.FormattedCharSequence;
+import org.jetbrains.annotations.NotNull;
 import xyz.neonetwork.neolib.NeoLib;
 
 public class NeoComponent {
@@ -20,7 +21,7 @@ public class NeoComponent {
 		return Chat(message.getString(), args);
 	}
 
-	public static FormattedCharSequence autoTruncateText(Font font, Component message, int width) {
+	public static FormattedCharSequence autoTruncateText(@NotNull Font font, @NotNull Component message, int width) {
 		if (font.width(message) > width) {
 			FormattedText formattedtext = font.substrByWidth(message, width - font.width(CommonComponents.ELLIPSIS));
 			return Language.getInstance().getVisualOrder(FormattedText.composite(formattedtext, CommonComponents.ELLIPSIS));
