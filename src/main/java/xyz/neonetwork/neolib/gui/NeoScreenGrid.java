@@ -19,6 +19,8 @@ public class NeoScreenGrid {
 	private final int columns;
 	private final int rows;
 
+	private NeoScreen screen = null;
+
 	private Boolean[] occupiedSpaces;
 	private Map<String, ScreenElementType> elementTypes = new HashMap<>();
 	private Map<String, ScreenGridCoordinate> grid = new HashMap<>();
@@ -60,7 +62,7 @@ public class NeoScreenGrid {
 				case BUTTON:
 					MetaButtonWidget buttonWidget = screenData.getMetaButtons().get(screenElement.getKey());
 					if (buttonWidget == null) continue;
-					this.addButtonWidget(coordinate.x, coordinate.y, coordinate.width, coordinate.height, buttonWidget.getName(), buttonWidget.getLabel(), buttonWidget.getTooltip(), buttonWidget.isDisabled(), (grid, button) -> {
+					this.addButtonWidget(coordinate.x, coordinate.y, coordinate.width, coordinate.height, buttonWidget.getName(), buttonWidget.getLabel(), buttonWidget.getTooltip(), buttonWidget.isDisabled(), (screen, grid, button) -> {
 						PacketDistributor.sendToServer(new ScreenEventPacket(new ScreenEventData(screenData.getUUID(), ScreenEventType.BUTTON, buttonWidget.getName(), this.getAllEditBoxValues())));
 					});
 					break;
@@ -80,6 +82,11 @@ public class NeoScreenGrid {
 		this.rows = Math.max(rows, 1);
 		occupiedSpaces = new Boolean[this.columns * this.rows];
 		Arrays.fill(occupiedSpaces, false);
+	}
+
+	public void setScreen(@NotNull NeoScreen screen) {
+		if (this.screen != null) return;
+		this.screen = screen;
 	}
 
 	private boolean nameExists(String name) {
@@ -198,7 +205,7 @@ public class NeoScreenGrid {
 		if (!setOccupied(column, row, colspan, rowspan, name, ScreenElementType.BUTTON)) return this;
 
 		Button.Builder button = Button.builder(label, (onPress) -> {
-			onPressCallback.onPress(this, onPress);
+			onPressCallback.onPress(this.screen, this, onPress);
 		});
 		if (tooltip != null) button.tooltip(Tooltip.create(tooltip));
 		this.buttonWidgets.put(name, button);
@@ -321,6 +328,6 @@ public class NeoScreenGrid {
 
 //	@OnlyIn(Dist.CLIENT)
 	public interface OnPress {
-		void onPress(NeoScreenGrid grid, Button button);
+		void onPress(NeoScreen screen, NeoScreenGrid grid, Button button);
 	}
 }

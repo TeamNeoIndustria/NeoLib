@@ -21,8 +21,9 @@ public class NeoStringWidget {
 	private int lineHeight = 10;
 	private List<FormattedCharSequence> lines = new ArrayList<>();
 	private boolean linesCalculated = false;
-	private NeoStringAlign.Horizontal horizontal = NeoStringAlign.Horizontal.CENTER;
-	private NeoStringAlign.Vertical vertical = NeoStringAlign.Vertical.MIDDLE;
+	private NeoStringAlign.Horizontal horizontal;
+	private NeoStringAlign.Vertical vertical;
+	private int visualHeight = 0;
 
 	public NeoStringWidget(int x, int y, int width, int height, @NotNull List<@NotNull Component> label, NeoStringAlign.Horizontal horizontalAlign, NeoStringAlign.Vertical verticalAlign, int lineHeight, Font font) {
 		this.x = x;
@@ -52,13 +53,18 @@ public class NeoStringWidget {
 		this.lines.clear();
 		for (Component currentLabel : this.label) {
 			if (currentLabel.getString().isEmpty()) {
-				lines.add(currentLabel.getVisualOrderText());
+				this.lines.add(currentLabel.getVisualOrderText());
 				continue;
 			}
-			lines.addAll(this.font.split(currentLabel, this.width));
+			this.lines.addAll(this.font.split(currentLabel, this.width));
 		}
-//		List<FormattedCharSequence> lines = this.font.split(this.label, this.width);
-		this.lines = lines.subList(0, Math.min((this.height / this.lineHeight), lines.size()));
+//		double a = ((double) this.height / this.lineHeight);
+//		double b = (double) (this.lineHeight - font.lineHeight) / this.lineHeight;
+//		int c = (int) (((a - (int) a) / b) + (int) a);
+//		NeoLib.LOGGER.info("A: {}, B: {}, C: {}", a, b, c);
+
+		int c = (this.height / this.lineHeight);
+		this.lines = this.lines.subList(0, Math.min(c, this.lines.size()));
 		this.linesCalculated = true;
 	}
 
@@ -83,7 +89,7 @@ public class NeoStringWidget {
 	}
 
 	public void setLineHeight(int lineHeight) {
-		if (lineHeight < 9) return;
+		if (lineHeight < font.lineHeight) return;
 		this.lineHeight = lineHeight;
 		this.linesCalculated = false;
 	}
