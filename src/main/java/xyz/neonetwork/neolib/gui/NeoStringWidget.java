@@ -108,8 +108,8 @@ public class NeoStringWidget {
 	public void render(GuiGraphics gui, int mouseX, int mouseY, float partialTick) {
 		if (!this.linesCalculated) this.calculateLines();
 		int offsetY = switch (this.vertical) {
-			case NeoStringAlign.Vertical.MIDDLE -> (this.height - (this.lineHeight * this.lines.size())) / 2;
-			case NeoStringAlign.Vertical.BOTTOM -> this.height - (this.lineHeight * this.lines.size());
+			case NeoStringAlign.Vertical.MIDDLE -> (this.height - (this.lineHeight * this.lines.size()) + this.lineHeight - font.lineHeight) / 2;
+			case NeoStringAlign.Vertical.BOTTOM -> this.height - (this.lineHeight * this.lines.size()) + this.lineHeight - font.lineHeight;
 			default -> 0;
 		};
 		for(FormattedCharSequence line : this.lines) {

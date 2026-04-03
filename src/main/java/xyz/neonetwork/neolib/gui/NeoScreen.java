@@ -110,6 +110,7 @@ public class NeoScreen extends Screen {
 		this.imageWidth = boundingBox.width + 32;
 		this.imageHeight = boundingBox.height + 34;
 		neoScreen = this;
+		grid.setScreen(this);
 	}
 
 	private final Map<String, EditBox> editBoxWidgets = new HashMap<>();
