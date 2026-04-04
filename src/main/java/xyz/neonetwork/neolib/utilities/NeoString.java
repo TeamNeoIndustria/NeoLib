@@ -17,6 +17,10 @@ public class NeoString {
 	}
 
 	public static String formatCurrency(int amount) {
-		return String.format("%,d", amount) + "¢";
+		return formatNumber(amount) + "¢";
+	}
+
+	public static String formatNumber(int number) {
+		return String.format("%,d", number);
 	}
 }
