@@ -13,12 +13,12 @@ import org.jetbrains.annotations.NotNull;
 import xyz.neonetwork.neolib.NeoLib;
 
 public class NeoComponent {
-	public static Component Chat(String message, Object... args) {
-		return Component.literal(String.format(message.replace("&", "§"), args));
+	public static Component formatString(Component message, Object... args) {
+		return formatString(message.getString(), args);
 	}
 
-	public static Component Chat(Component message, Object... args) {
-		return Chat(message.getString(), args);
+	public static Component formatString(String message, Object... args) {
+		return Component.literal(String.format(message.replace("&", "§"), args));
 	}
 
 	public static FormattedCharSequence autoTruncateText(@NotNull Font font, @NotNull Component message, int width) {

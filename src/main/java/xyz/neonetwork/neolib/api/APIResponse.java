@@ -1,45 +1,59 @@
 package xyz.neonetwork.neolib.api;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import xyz.neonetwork.neolib.NeoLib;
 
 public class APIResponse {
-    private JsonNode json;
+    private JsonObject json;
+
     public APIResponse(String jsonString) {
         if (jsonString == null) {
             this.json = null;
             return;
         }
-        ObjectMapper mapper = new ObjectMapper();
         try {
-//            NeoLib.LOGGER.info(jsonString);
-            this.json = mapper.readTree(jsonString);
+            this.json = JsonParser.parseString(jsonString).getAsJsonObject();
         } catch (Exception e) {
             this.json = null;
             NeoLib.LOGGER.warn("NeoLib.api.APIResponse#APIResponse failed to parse response");
         }
     }
+
     public boolean getSuccess() {
         if (json == null) return false;
-        if (!json.has("success")) return false;
-        return json.get("success").asBoolean();
+		try {
+			return json.get("success").getAsBoolean();
+		} catch (Exception ignored) {
+			return false;
+		}
     }
+
     public String getStatusCode() {
         if (json == null) return "499"; // 499 = Parse Error / Not Found
-        if (!json.has("code")) return "499";
-        JsonNode code = json.get("code");
-        return code.isTextual() ? code.asText() : "499";
+		try {
+			return String.valueOf(json.get("code").getAsInt());
+		} catch (Exception ignored) {
+			return "499";
+		}
     }
+
     public String getStatusMessage() {
         if (json == null) return "Unknown API Error";
-        if (!json.has("codeMessage")) return "Unknown API Error";
-        JsonNode codeMessage = json.get("codeMessage");
-        return codeMessage.isTextual() ? codeMessage.asText() : "Unknown API Error";
+		try {
+			return String.valueOf(json.get("codeMessage").getAsString());
+		} catch (Exception ignored) {
+			return "Unknown API Error";
+		}
     }
-    public JsonNode getDataNode() {
+
+    public JsonElement getDataNode() {
         if (json == null) return null;
-        if (!json.has("data")) return null;
-        return json.get("data");
+		try {
+			return json.get("data");
+		} catch (Exception ignored) {
+			return null;
+		}
     }
 }
