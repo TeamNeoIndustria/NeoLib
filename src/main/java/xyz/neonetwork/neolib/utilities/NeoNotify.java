@@ -163,6 +163,9 @@ public class NeoNotify {
 
 	@OnlyIn(Dist.CLIENT)
 	public static void sendTitle(Component title, Component subtitle, int fadeIn, int stay, int fadeOut) {
+		if (fadeIn < 0) fadeIn = 0;
+		if (stay < 0) stay = 0;
+		if (fadeOut < 0) fadeOut = 0;
 		if (title == null && subtitle == null) return;
 		Minecraft mc = Minecraft.getInstance();
 		if (mc.level == null) return;
