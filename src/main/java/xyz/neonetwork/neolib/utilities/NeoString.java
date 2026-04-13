@@ -29,7 +29,7 @@ public class NeoString {
 	}
 
 	public static String formatNumber(double number) {
-		return String.format("%1$,f", number);
+		return String.format("%1$,.0f", number);
 	}
 
 	public static String formatNumber(double number, int decimalPlaces) {
@@ -39,7 +39,7 @@ public class NeoString {
 	}
 
 	public static String formatNumber(float number) {
-		return String.format("%1$,f", number);
+		return String.format("%1$,.0f", number);
 	}
 
 	public static String formatNumber(float number, int decimalPlaces) {
