@@ -29,10 +29,22 @@ public class NeoString {
 	}
 
 	public static String formatNumber(double number) {
-		return String.format("%1$,.2f", number);
+		return String.format("%1$,f", number);
+	}
+
+	public static String formatNumber(double number, int decimalPlaces) {
+		if (decimalPlaces < 1) return formatNumber(number);
+		String format = "%1$,." + decimalPlaces + "f";
+		return String.format(format, number);
 	}
 
 	public static String formatNumber(float number) {
-		return String.format("%1$,.2f", number);
+		return String.format("%1$,f", number);
+	}
+
+	public static String formatNumber(float number, int decimalPlaces) {
+		if (decimalPlaces < 1) return formatNumber(number);
+		String format = "%1$,." + decimalPlaces + "f";
+		return String.format(format, number);
 	}
 }
