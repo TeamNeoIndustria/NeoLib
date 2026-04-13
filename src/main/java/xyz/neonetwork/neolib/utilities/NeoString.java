@@ -23,4 +23,16 @@ public class NeoString {
 	public static String formatNumber(int number) {
 		return String.format("%,d", number);
 	}
+
+	public static String formatNumber(long number) {
+		return String.format("%,d", number);
+	}
+
+	public static String formatNumber(double number) {
+		return String.format("%1$,.2f", number);
+	}
+
+	public static String formatNumber(float number) {
+		return String.format("%1$,.2f", number);
+	}
 }
