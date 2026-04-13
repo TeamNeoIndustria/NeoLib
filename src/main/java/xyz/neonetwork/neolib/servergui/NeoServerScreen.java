@@ -51,6 +51,7 @@ public class NeoServerScreen {
 	public void close() {
 		if (player == null) return;
 		PacketDistributor.sendToPlayer(player, new ScreenEventPacket(new ScreenEventData(this.uuid, ScreenEventType.CLOSE, null, null)));
+		screenMap.remove(this.uuid);
 	}
 
 	public static NeoServerScreen getServerScreen(UUID screenUUID) {
