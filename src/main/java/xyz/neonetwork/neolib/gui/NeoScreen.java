@@ -426,7 +426,7 @@ public class NeoScreen extends Screen {
 	public void onClose() {
 		this.onCloseCallback.onClose(grid);
 		neoScreen = null;
-		NeoLib.LOGGER.info("Screen closed");
+//		NeoLib.LOGGER.info("Screen closed");
 		super.onClose();
 	}
 
