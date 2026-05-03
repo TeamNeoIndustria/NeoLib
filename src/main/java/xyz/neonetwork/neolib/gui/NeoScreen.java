@@ -337,6 +337,7 @@ public class NeoScreen extends Screen {
 			if (!editBox.keyPressed(keyCode, scanCode, modifiers)) {
 				return editBox.isFocused() && keyCode != 256 || super.keyPressed(keyCode, scanCode, modifiers);
 			}
+			return false;
 		}
 		return super.keyPressed(keyCode, scanCode, modifiers);
 	}

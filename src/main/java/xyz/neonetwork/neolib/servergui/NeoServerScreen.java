@@ -60,6 +60,7 @@ public class NeoServerScreen {
 
 	public static void processIncomingPacket(String playerUUID, @NotNull ScreenEventData screenEventData) {
 		NeoServerScreen serverScreen = getServerScreen(screenEventData.getUUID());
+		if (serverScreen == null) return;
 		if (!Objects.equals(playerUUID, serverScreen.player.getStringUUID())) return;
 		switch (screenEventData.getType()) {
 			case BUTTON:

@@ -2,11 +2,12 @@ package xyz.neonetwork.neolib.utilities;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.toasts.Toast;
-import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ClientboundSetSubtitleTextPacket;
 import net.minecraft.network.protocol.game.ClientboundSetTitleTextPacket;
 import net.minecraft.network.protocol.game.ClientboundSetTitlesAnimationPacket;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
@@ -187,17 +188,7 @@ public class NeoNotify {
 
 	@OnlyIn(Dist.DEDICATED_SERVER)
 	public static void playSound(ServerPlayer player, SoundEvent sound, SoundSource source, float volume, float pitch) {
-		player.serverLevel().playLocalSound(player, sound, source, volume, pitch);
-//		player.serverLevel().playSound(
-//			player,
-//			player.getX(),
-//			player.getY(),
-//			player.getZ(),
-//			sound,
-//			source,
-//			volume,
-//			pitch
-//		);
+		player.serverLevel().playSound(null, player.getOnPos(), sound, source, volume, pitch);
 	}
 
 	@OnlyIn(Dist.DEDICATED_SERVER)
@@ -223,6 +214,11 @@ public class NeoNotify {
 	@OnlyIn(Dist.CLIENT)
 	public static void playSound(SoundEvent sound, SoundSource source, float volume, float pitch) {
 		if (Minecraft.getInstance().level == null || Minecraft.getInstance().player == null) return;
-		Minecraft.getInstance().level.playLocalSound(Minecraft.getInstance().player, sound, source, volume, pitch);
+		Minecraft.getInstance().level.playSound(null, Minecraft.getInstance().player.getOnPos(), sound, source, volume, pitch);
+	}
+
+	@OnlyIn(Dist.DEDICATED_SERVER)
+	public static void showParticle(ServerLevel level, ParticleOptions particle, float x, float y, float z, int count, float xOffset, float yOffset, float zOffset, float speed) {
+		level.sendParticles(particle, x, y, z, count, xOffset, yOffset, zOffset, speed);
 	}
 }
